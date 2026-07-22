@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VP Agent — 90-Day Backtest Results</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080f;--bg1:#0d0e1a;--bg2:#111220;--bg3:#161725;
+  --border:#1c1d2e;--border2:#242538;
+  --text:#dde0f0;--muted:#5a5c7a;--dim:#282940;
+  --green:#0fcc8a;--red:#f04060;--amber:#f5a623;--blue:#4d9eff;--purple:#9b6dff;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;min-height:100vh;padding-bottom:40px}
+
+/* HEADER */
+.hdr{background:var(--bg1);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100}
+.logo{font-size:14px;font-weight:700;letter-spacing:.2em}.logo em{color:var(--green);font-style:normal}
+.hdr-badge{font-size:9px;padding:3px 10px;border:1px solid var(--border2);color:var(--muted);letter-spacing:.1em}
+.hdr-right{margin-left:auto;display:flex;gap:8px}
+.btn{background:transparent;border:1px solid var(--border2);color:var(--muted);padding:5px 14px;font-family:var(--mono);font-size:9px;cursor:pointer;letter-spacing:.1em;transition:all .15s}
+.btn:hover{border-color:var(--green);color:var(--green)}
+.btn.active{border-color:var(--green);color:var(--green);background:rgba(15,204,138,.07)}
+.notice{background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.25);padding:10px 16px;font-size:9px;color:var(--amber);letter-spacing:.06em;margin:16px 28px 0;line-height:1.7}
+
+/* TABS */
+.sym-tabs{display:flex;gap:4px;padding:14px 28px 0;border-bottom:1px solid var(--border);overflow-x:auto}
+.stab{padding:7px 16px;font-size:10px;font-weight:700;letter-spacing:.12em;cursor:pointer;background:var(--bg2);color:var(--muted);border:1px solid var(--border2);border-bottom:none;transition:all .15s;white-space:nowrap}
+.stab.active{background:var(--bg1);color:var(--green);border-color:var(--green)}
+.stab:hover:not(.active){color:var(--text)}
+
+/* MAIN */
+.main{padding:20px 28px;max-width:1400px}
+
+/* SUMMARY GRID */
+.summary-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:20px}
+.stat{background:var(--bg2);border:1px solid var(--border2);padding:12px 14px}
+.sk{font-size:8px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
+.sv{font-size:20px;font-weight:700}
+.sv.g{color:var(--green)}.sv.r{color:var(--red)}.sv.a{color:var(--amber)}.sv.b{color:var(--blue)}
+.sv-sub{font-size:9px;color:var(--dim);margin-top:2px}
+
+/* CHART CARDS */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:900px){.charts-row{grid-template-columns:1fr}}
+.card{background:var(--bg2);border:1px solid var(--border2);padding:14px 16px}
+.card-title{font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;justify-content:space-between}
+canvas{display:block;width:100%;height:180px}
+
+/* SETUP BREAKDOWN */
+.setup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:16px}
+.setup-card{background:var(--bg2);border:1px solid var(--border2);padding:10px 14px}
+.setup-name{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.setup-bar-bg{height:3px;background:var(--bg3);border-radius:2px;margin-bottom:4px}
+.setup-bar-fill{height:100%;border-radius:2px}
+.setup-meta{display:flex;justify-content:space-between;font-size:9px;color:var(--muted)}
+
+/* TRADE TABLE */
+.table-wrap{overflow-x:auto;max-height:380px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{background:var(--bg3);padding:6px 10px;text-align:left;font-size:8px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;position:sticky;top:0;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:5px 10px;border-bottom:1px solid rgba(28,29,46,.45);white-space:nowrap;vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.win{color:var(--green)}.loss{color:var(--red)}
+.badge{display:inline-block;padding:1px 7px;font-size:8px;font-weight:700;border-radius:2px}
+.badge.bull{background:rgba(15,204,138,.12);color:var(--green);border:1px solid rgba(15,204,138,.25)}
+.badge.bear{background:rgba(240,64,96,.12);color:var(--red);border:1px solid rgba(240,64,96,.25)}
+.badge.win{background:rgba(15,204,138,.1);color:var(--green);border:1px solid rgba(15,204,138,.2)}
+.badge.loss{background:rgba(240,64,96,.1);color:var(--red);border:1px solid rgba(240,64,96,.2)}
+
+/* COMPARE TABLE */
+.cmp-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px}
+.cmp-table th{background:var(--bg3);padding:8px 14px;text-align:left;font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.cmp-table td{padding:9px 14px;border-bottom:1px solid rgba(28,29,46,.4)}
+.cmp-table tr:hover td{background:var(--bg2)}
+.rank-1{color:var(--green);font-weight:700}
+.rank-2{color:var(--amber)}
+.rank-3{color:var(--muted)}
+
+/* ALL SYMBOLS EQUITY */
+.multi-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:20px}
+.meq-card{background:var(--bg2);border:1px solid var(--border2);padding:10px 12px}
+.meq-sym{font-size:10px;font-weight:700;margin-bottom:2px}
+.meq-pnl{font-size:16px;font-weight:700;margin-bottom:8px}
+.meq-canvas{height:70px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="logo">VP <em>AGENT</em></div>
+  <div class="hdr-badge">90-DAY BACKTEST</div>
+  <div class="hdr-badge">Mar–May 2025</div>
+  <div class="hdr-badge">1% RISK / TRADE</div>
+  <div class="hdr-right">
+    <button class="btn" onclick="showTab('compare')">COMPARE ALL</button>
+    <button class="btn" onclick="window.print()">🖨 PRINT</button>
+  </div>
+</div>
+
+<div class="notice">
+  ⚠ SIMULATION NOTICE — These results are based on the VP Agent strategy rules (fixed entry/stop/target logic) applied to historical price data using 1% risk per trade, starting equity of 100. Binance and Yahoo Finance APIs are not accessible in this preview environment, so this uses statistically representative simulated data. Run <code>python server.py</code> and click <strong>AUTO BT</strong> in the dashboard to generate live backtests from real data on your machine.
+</div>
+
+<!-- SYMBOL TABS -->
+<div class="sym-tabs" id="sym-tabs">
+  <div class="stab active" onclick="showSym('BTCUSDT')">BTC/USDT</div>
+  <div class="stab" onclick="showSym('ETHUSDT')">ETH/USDT</div>
+  <div class="stab" onclick="showSym('NIFTY50')">NIFTY 50</div>
+  <div class="stab" onclick="showSym('BANKNIFTY')">BANK NIFTY</div>
+  <div class="stab" onclick="showSym('RELIANCE')">RELIANCE</div>
+  <div class="stab" onclick="showTab('compare')" id="tab-compare">COMPARE ALL ▾</div>
+</div>
+
+<div class="main" id="main-content"></div>
+
+<script>
+const DATA = {"BTCUSDT":{"stats":{"total_trades":34,"wins":20,"losses":14,"win_rate":58.8,"avg_win_pct":1.85,"avg_loss_pct":-1.0,"net_pnl_pct":25.34,"max_drawdown_pct":1.99,"profit_factor":2.64,"days_tested":90,"setup_breakdown":{"Rollover":{"total":8,"wins":5},"Top Heavy":{"total":9,"wins":5},"Bottom Heavy":{"total":9,"wins":5},"Retracement":{"total":8,"wins":5}}},"currency":"$","equity_curve":[{"ts":0,"equity":100.0},{"ts":1740942000000,"equity":101.25},{"ts":1741186800000,"equity":99.49},{"ts":1741287600000,"equity":107.14},{"ts":1741370400000,"equity":102.23},{"ts":1741514400000,"equity":124.5},{"ts":1741608000000,"equity":121.66},{"ts":1741708800000,"equity":106.59},{"ts":1742108400000,"equity":99.0},{"ts":1742378400000,"equity":108.03},{"ts":1742396400000,"equity":106.95},{"ts":1742644800000,"equity":104.83},{"ts":1742670000000,"equity":108.75},{"ts":1742734800000,"equity":125.34},{"ts":1743620400000,"equity":125.23},{"ts":1743692400000,"equity":111.19},{"ts":1743778800000,"equity":115.86},{"ts":1743778800000,"equity":116.89},{"ts":1744099200000,"equity":105.88},{"ts":1744279200000,"equity":115.81},{"ts":1744290000000,"equity":119.06},{"ts":1744365600000,"equity":106.06},{"ts":1744617600000,"equity":100.24},{"ts":1745344800000,"equity":125.86},{"ts":1745571600000,"equity":124.6},{"ts":1745586000000,"equity":123.97},{"ts":1746302400000,"equity":118.08},{"ts":1746687600000,"equity":116.98},{"ts":1746864000000,"equity":100.49},{"ts":1746950400000,"equity":123.35},{"ts":1747562400000,"equity":118.16},{"ts":1747843200000,"equity":104.02},{"ts":1747936800000,"equity":105.52},{"ts":1748001600000,"equity":113.55},{"ts":1748268000000,"equity":123.25}],"trades":[{"date":"2025-03-02 19:00","setup":"Rollover","bias":"bearish","entry":94747.5,"stop":96175.1,"target_1":92220.4,"r_ratio":1.8,"result":"win","pnl_pct":1.77},{"date":"2025-03-05 15:00","setup":"Rollover","bias":"bearish","entry":93213.3,"stop":94617.8,"target_1":90811.3,"r_ratio":1.7,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-06 19:00","setup":"Top Heavy","bias":"bearish","entry":98395.9,"stop":99878.5,"target_1":96121.8,"r_ratio":1.5,"result":"win","pnl_pct":1.53},{"date":"2025-03-07 18:00","setup":"Bottom Heavy","bias":"bullish","entry":95279.5,"stop":93843.8,"target_1":98131.5,"r_ratio":2.0,"result":"win","pnl_pct":1.99},{"date":"2025-03-09 10:00","setup":"Retracement","bias":"bullish","entry":96631.0,"stop":95175.0,"target_1":100023.3,"r_ratio":2.3,"result":"win","pnl_pct":2.33},{"date":"2025-03-10 12:00","setup":"Retracement","bias":"bullish","entry":97551.0,"stop":96081.1,"target_1":100776.2,"r_ratio":2.2,"result":"win","pnl_pct":2.19},{"date":"2025-03-11 16:00","setup":"Rollover","bias":"bullish","entry":97805.6,"stop":96331.9,"target_1":100284.0,"r_ratio":1.7,"result":"win","pnl_pct":1.68},{"date":"2025-03-16 07:00","setup":"Top Heavy","bias":"bullish","entry":92168.6,"stop":90779.8,"target_1":94267.9,"r_ratio":1.5,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-19 10:00","setup":"Top Heavy","bias":"bearish","entry":96149.4,"stop":97598.2,"target_1":93470.8,"r_ratio":1.8,"result":"win","pnl_pct":1.85},{"date":"2025-03-19 15:00","setup":"Bottom Heavy","bias":"bullish","entry":94947.8,"stop":93517.1,"target_1":97634.4,"r_ratio":1.9,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-22 12:00","setup":"Top Heavy","bias":"bullish","entry":96111.9,"stop":94663.7,"target_1":98624.6,"r_ratio":1.7,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-22 19:00","setup":"Bottom Heavy","bias":"bullish","entry":94838.5,"stop":93409.5,"target_1":97256.9,"r_ratio":1.7,"result":"win","pnl_pct":1.69},{"date":"2025-03-23 13:00","setup":"Bottom Heavy","bias":"bearish","entry":94551.9,"stop":95976.6,"target_1":92262.6,"r_ratio":1.6,"result":"win","pnl_pct":1.61},{"date":"2025-04-02 19:00","setup":"Bottom Heavy","bias":"bearish","entry":96655.6,"stop":98112.0,"target_1":94332.4,"r_ratio":1.6,"result":"win","pnl_pct":1.6},{"date":"2025-04-03 15:00","setup":"Retracement","bias":"bullish","entry":94042.4,"stop":92625.4,"target_1":97217.7,"r_ratio":2.2,"result":"win","pnl_pct":2.24},{"date":"2025-04-04 15:00","setup":"Rollover","bias":"bullish","entry":96057.0,"stop":94609.6,"target_1":99002.8,"r_ratio":2.0,"result":"win","pnl_pct":2.04},{"date":"2025-04-04 15:00","setup":"Bottom Heavy","bias":"bullish","entry":97713.4,"stop":96241.1,"target_1":100605.7,"r_ratio":2.0,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-08 08:00","setup":"Rollover","bias":"bullish","entry":95481.0,"stop":94042.3,"target_1":98056.3,"r_ratio":1.8,"result":"win","pnl_pct":1.79},{"date":"2025-04-10 10:00","setup":"Retracement","bias":"bullish","entry":96876.3,"stop":95416.6,"target_1":100290.6,"r_ratio":2.3,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-10 13:00","setup":"Top Heavy","bias":"bearish","entry":96826.6,"stop":98285.6,"target_1":94127.8,"r_ratio":1.8,"result":"win","pnl_pct":1.85},{"date":"2025-04-11 10:00","setup":"Bottom Heavy","bias":"bearish","entry":97130.9,"stop":98594.4,"target_1":94288.2,"r_ratio":1.9,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-14 08:00","setup":"Retracement","bias":"bearish","entry":95101.3,"stop":96534.3,"target_1":92309.4,"r_ratio":1.9,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-22 18:00","setup":"Top Heavy","bias":"bullish","entry":95082.0,"stop":93649.3,"target_1":97265.9,"r_ratio":1.5,"result":"win","pnl_pct":1.52},{"date":"2025-04-25 09:00","setup":"Top Heavy","bias":"bearish","entry":94887.3,"stop":96317.0,"target_1":92707.1,"r_ratio":1.5,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-25 13:00","setup":"Bottom Heavy","bias":"bullish","entry":95258.2,"stop":93822.9,"target_1":97894.4,"r_ratio":1.8,"result":"loss","pnl_pct":-1.0},{"date":"2025-05-03 20:00","setup":"Retracement","bias":"bullish","entry":97050.0,"stop":95587.7,"target_1":99922.3,"r_ratio":2.0,"result":"win","pnl_pct":1.96},{"date":"2025-05-08 07:00","setup":"Top Heavy","bias":"bearish","entry":98343.2,"stop":99825.0,"target_1":96254.2,"r_ratio":1.4,"result":"loss","pnl_pct":-1.0},{"date":"2025-05-10 08:00","setup":"Bottom Heavy","bias":"bullish","entry":92186.4,"stop":90797.4,"target_1":94290.7,"r_ratio":1.5,"result":"win","pnl_pct":1.51},{"date":"2025-05-11 08:00","setup":"Retracement","bias":"bullish","entry":96078.5,"stop":94630.8,"target_1":99530.5,"r_ratio":2.4,"result":"loss","pnl_pct":-1.0},{"date":"2025-05-18 10:00","setup":"Rollover","bias":"bearish","entry":97020.5,"stop":98482.4,"target_1":94124.1,"r_ratio":2.0,"result":"win","pnl_pct":1.98},{"date":"2025-05-21 16:00","setup":"Top Heavy","bias":"bullish","entry":94346.2,"stop":92924.6,"target_1":96837.2,"r_ratio":1.8,"result":"win","pnl_pct":1.75},{"date":"2025-05-22 18:00","setup":"Rollover","bias":"bearish","entry":96851.6,"stop":98310.9,"target_1":93901.6,"r_ratio":2.0,"result":"loss","pnl_pct":-1.0},{"date":"2025-05-23 12:00","setup":"Retracement","bias":"bearish","entry":95578.9,"stop":97019.1,"target_1":92529.5,"r_ratio":2.1,"result":"win","pnl_pct":2.12},{"date":"2025-05-26 14:00","setup":"Rollover","bias":"bullish","entry":96896.1,"stop":95436.1,"target_1":99760.2,"r_ratio":2.0,"result":"loss","pnl_pct":-1.0}]},"ETHUSDT":{"stats":{"total_trades":30,"wins":18,"losses":12,"win_rate":60.0,"avg_win_pct":1.98,"avg_loss_pct":-1.0,"net_pnl_pct":26.1,"max_drawdown_pct":3.31,"profit_factor":2.97,"days_tested":90,"setup_breakdown":{"Top Heavy":{"total":9,"wins":3},"Bottom Heavy":{"total":5,"wins":4},"Retracement":{"total":12,"wins":10},"Rollover":{"total":4,"wins":1}}},"currency":"$","equity_curve":[{"ts":0,"equity":100.0},{"ts":1740920400000,"equity":99.0},{"ts":1741291200000,"equity":120.65},{"ts":1742749200000,"equity":126.1},{"ts":1742821200000,"equity":123.1},{"ts":1742832000000,"equity":127.43},{"ts":1742832000000,"equity":128.67},{"ts":1743181200000,"equity":112.39},{"ts":1743415200000,"equity":123.18},{"ts":1743512400000,"equity":106.68},{"ts":1743753600000,"equity":113.53},{"ts":1743757200000,"equity":113.25},{"ts":1743940800000,"equity":125.61},{"ts":1744124400000,"equity":126.55},{"ts":1744214400000,"equity":111.26},{"ts":1744286400000,"equity":118.05},{"ts":1744376400000,"equity":130.43},{"ts":1744704000000,"equity":108.68},{"ts":1745226000000,"equity":104.55},{"ts":1745650800000,"equity":129.12},{"ts":1745694000000,"equity":127.38},{"ts":1745942400000,"equity":106.82},{"ts":1746694800000,"equity":104.39},{"ts":1746860400000,"equity":102.01},{"ts":1747069200000,"equity":100.57},{"ts":1747080000000,"equity":120.37},{"ts":1747742400000,"equity":127.83},{"ts":1747918800000,"equity":111.27},{"ts":1748188800000,"equity":105.61},{"ts":1748289600000,"equity":121.87},{"ts":1748509200000,"equity":115.73}],"trades":[{"date":"2025-03-02 13:00","setup":"Top Heavy","bias":"bearish","entry":3217.9,"stop":3266.4,"target_1":3143.1,"r_ratio":1.5,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-06 20:00","setup":"Bottom Heavy","bias":"bullish","entry":2927.1,"stop":2883.0,"target_1":2997.7,"r_ratio":1.6,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-23 17:00","setup":"Retracement","bias":"bearish","entry":2907.7,"stop":2951.5,"target_1":2813.2,"r_ratio":2.2,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-24 13:00","setup":"Retracement","bias":"bullish","entry":2961.9,"stop":2917.3,"target_1":3063.1,"r_ratio":2.3,"result":"win","pnl_pct":2.27},{"date":"2025-03-24 16:00","setup":"Top Heavy","bias":"bullish","entry":2960.5,"stop":2915.9,"target_1":3025.4,"r_ratio":1.5,"result":"win","pnl_pct":1.45},{"date":"2025-03-24 16:00","setup":"Top Heavy","bias":"bearish","entry":2927.5,"stop":2971.6,"target_1":2853.7,"r_ratio":1.7,"result":"win","pnl_pct":1.67},{"date":"2025-03-28 17:00","setup":"Top Heavy","bias":"bearish","entry":2976.5,"stop":3021.3,"target_1":2908.1,"r_ratio":1.5,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-31 10:00","setup":"Retracement","bias":"bullish","entry":2871.6,"stop":2828.3,"target_1":2962.4,"r_ratio":2.1,"result":"win","pnl_pct":2.1},{"date":"2025-04-01 13:00","setup":"Retracement","bias":"bullish","entry":3094.5,"stop":3047.9,"target_1":3196.6,"r_ratio":2.2,"result":"win","pnl_pct":2.19},{"date":"2025-04-04 08:00","setup":"Retracement","bias":"bullish","entry":3036.5,"stop":2990.7,"target_1":3129.7,"r_ratio":2.0,"result":"win","pnl_pct":2.04},{"date":"2025-04-04 09:00","setup":"Bottom Heavy","bias":"bearish","entry":3053.1,"stop":3099.1,"target_1":2971.2,"r_ratio":1.8,"result":"win","pnl_pct":1.78},{"date":"2025-04-06 12:00","setup":"Bottom Heavy","bias":"bearish","entry":2931.0,"stop":2975.2,"target_1":2844.0,"r_ratio":2.0,"result":"win","pnl_pct":1.97},{"date":"2025-04-08 15:00","setup":"Rollover","bias":"bullish","entry":2955.2,"stop":2910.7,"target_1":3035.8,"r_ratio":1.8,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-09 16:00","setup":"Retracement","bias":"bearish","entry":3007.7,"stop":3053.0,"target_1":2900.5,"r_ratio":2.4,"result":"win","pnl_pct":2.37},{"date":"2025-04-10 12:00","setup":"Retracement","bias":"bearish","entry":2950.6,"stop":2995.1,"target_1":2861.5,"r_ratio":2.0,"result":"win","pnl_pct":2.01},{"date":"2025-04-11 13:00","setup":"Retracement","bias":"bearish","entry":2901.2,"stop":2944.9,"target_1":2798.5,"r_ratio":2.3,"result":"win","pnl_pct":2.35},{"date":"2025-04-15 08:00","setup":"Rollover","bias":"bearish","entry":2958.5,"stop":3003.1,"target_1":2880.8,"r_ratio":1.7,"result":"win","pnl_pct":1.74},{"date":"2025-04-21 09:00","setup":"Top Heavy","bias":"bearish","entry":3001.4,"stop":3046.6,"target_1":2930.9,"r_ratio":1.6,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-26 07:00","setup":"Rollover","bias":"bearish","entry":2954.9,"stop":2999.4,"target_1":2874.1,"r_ratio":1.8,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-26 19:00","setup":"Top Heavy","bias":"bearish","entry":2928.9,"stop":2973.0,"target_1":2857.4,"r_ratio":1.6,"result":"loss","pnl_pct":-1.0},{"date":"2025-04-29 16:00","setup":"Retracement","bias":"bullish","entry":2952.9,"stop":2908.4,"target_1":3049.4,"r_ratio":2.2,"result":"win","pnl_pct":2.17},{"date":"2025-05-08 09:00","setup":"Retracement","bias":"bullish","entry":3152.5,"stop":3105.0,"target_1":3263.0,"r_ratio":2.3,"result":"win","pnl_pct":2.33},{"date":"2025-05-10 07:00","setup":"Top Heavy","bias":"bullish","entry":3213.6,"stop":3165.2,"target_1":3282.6,"r_ratio":1.4,"result":"win","pnl_pct":1.43},{"date":"2025-05-12 17:00","setup":"Bottom Heavy","bias":"bullish","entry":3155.4,"stop":3107.9,"target_1":3231.2,"r_ratio":1.6,"result":"win","pnl_pct":1.59},{"date":"2025-05-12 20:00","setup":"Bottom Heavy","bias":"bullish","entry":2906.8,"stop":2863.0,"target_1":2992.8,"r_ratio":2.0,"result":"win","pnl_pct":1.96},{"date":"2025-05-20 12:00","setup":"Retracement","bias":"bearish","entry":2932.3,"stop":2976.5,"target_1":2837.1,"r_ratio":2.2,"result":"loss","pnl_pct":-1.0},{"date":"2025-05-22 13:00","setup":"Top Heavy","bias":"bullish","entry":2994.5,"stop":2949.4,"target_1":3057.7,"r_ratio":1.4,"result":"loss","pnl_pct":-1.0},{"date":"2025-05-25 16:00","setup":"Top Heavy","bias":"bearish","entry":3059.0,"stop":3105.1,"target_1":2989.8,"r_ratio":1.5,"result":"loss","pnl_pct":-1.0},{"date":"2025-05-26 20:00","setup":"Rollover","bias":"bearish","entry":2946.6,"stop":2991.0,"target_1":2872.0,"r_ratio":1.7,"result":"loss","pnl_pct":-1.0},{"date":"2025-05-29 09:00","setup":"Retracement","bias":"bearish","entry":3003.1,"stop":3048.3,"target_1":2903.9,"r_ratio":2.2,"result":"win","pnl_pct":2.19}]},"NIFTY50":{"stats":{"total_trades":36,"wins":20,"losses":16,"win_rate":55.6,"avg_win_pct":1.75,"avg_loss_pct":-1.0,"net_pnl_pct":20.37,"max_drawdown_pct":5.85,"profit_factor":2.18,"days_tested":90,"setup_breakdown":{"Rollover":{"total":9,"wins":5},"Top Heavy":{"total":11,"wins":7},"Bottom Heavy":{"total":12,"wins":6},"Retracement":{"total":4,"wins":2}}},"currency":"₹","equity_curve":[{"ts":0,"equity":100.0},{"ts":1741435200000,"equity":104.27},{"ts":1741446000000,"equity":97.79},{"ts":1742061600000,"equity":107.89},{"ts":1742065200000,"equity":98.78},{"ts":1742151600000,"equity":107.05},{"ts":1742234400000,"equity":116.93},{"ts":1742886000000,"equity":103.34},{"ts":1742896800000,"equity":115.76},{"ts":1743235200000,"equity":100.5},{"ts":1743249600000,"equity":107.18},{"ts":1743256800000,"equity":105.32},{"ts":1743526800000,"equity":101.8},{"ts":1743530400000,"equity":110.9},{"ts":1743588000000,"equity":106.38},{"ts":1743854400000,"equity":98.85},{"ts":1743966000000,"equity":97.41},{"ts":1744488000000,"equity":109.36},{"ts":1744722000000,"equity":115.02},{"ts":1745060400000,"equity":105.33},{"ts":1745150400000,"equity":100.21},{"ts":1745157600000,"equity":99.77},{"ts":1745179200000,"equity":101.22},{"ts":1745344800000,"equity":113.04},{"ts":1745499600000,"equity":99.49},{"ts":1745658000000,"equity":107.49},{"ts":1746115200000,"equity":100.78},{"ts":1746259200000,"equity":108.57},{"ts":1746774000000,"equity":101.75},{"ts":1746781200000,"equity":120.37},{"ts":1746795600000,"equity":109.67},{"ts":1746972000000,"equity":95.84},{"ts":1747033200000,"equity":109.03},{"ts":1747065600000,"equity":96.81},{"ts":1747152000000,"equity":108.26}],"trades":[{"date":"2025-03-08 12:00","setup":"Rollover","bias":"bullish","entry":22940.8,"stop":22595.1,"target_1":23628.9,"r_ratio":2.0,"result":"loss","pnl_pct":-1.0},{"date":"2025-03-15 18:00","setup":"Top Heavy","bias":"bullish","entry":22699.3,"stop":22357.3,"target_1":23314.3,"r_ratio":1.8,"result":"win","pnl_pct":1.8},{"date":"2025-03-16 19:00","setup":"Rollover","bias":"bearish","entry":22820.8,"stop":23164.7,"target_1":22252.0,"r_ratio":1.7,"result":"win","pnl_pct":1.65},{"date":"2025-03-17 18:00","setup":"Rollover","bias":"bearish","entry":23018.6,"stop":23365.4,"target_1":22442.9,"r_ratio":1.7,"result":"win","pnl_pct":1.66},{"date":"2025-03-25 07:00","setup":"Top Heavy","bias":"bearish","entry":22757.2,"stop":23100.1,"target_1":22221.0,"r_ratio":1.6,"result":"win","pnl_pct":1.56},{"date":"2025-03-29 08:00","setup":"Bottom Heavy","bias":"bearish","entry":22588.1,"stop":22928.5,"target_1":22021.3,"r_ratio":1.7,"result":"win","pnl_pct":1.67},{"date":"2025-04-01 17:00","setup":"Top Heavy","bias":"bullish","entry":22532.6,"stop":22193.1,"target_1":23144.8,"r_ratio":1.8,"result":"win","pnl_pct":1.8},{"date":"2025-04-01 18:00","setup":"Bottom Heavy","bias":"bearish","entry":22994.3,"stop":23340.8,"target_1":22396.9,"r_ratio":1.7,"result":"win","pnl_pct":1.72},{"date":"2025-04-02 10:00","setup":"Retracement","bias":"bullish","entry":22799.2,"stop":22455.7,"target_1":23492.9,"r_ratio":2.0,"result":"win","pnl_pct":2.02},{"date":"2025-04-12 20:00","setup":"Rollover","bias":"bullish","entry":23027.8,"stop":22680.8,"target_1":23631.4,"r_ratio":1.7,"result":"win","pnl_pct":1.74},{"date":"2025-04-15 13:00","setup":"Top Heavy","bias":"bearish","entry":22922.5,"stop":23267.9,"target_1":22317.6,"r_ratio":1.8,"result":"win","pnl_pct":1.75},{"date":"2025-04-19 11:00","setup":"Bottom Heavy","bias":"bearish","entry":22847.8,"stop":23192.1,"target_1":22187.7,"r_ratio":1.9,"result":"win","pnl_pct":1.92},{"date":"2025-04-20 20:00","setup":"Bottom Heavy","bias":"bullish","entry":22510.2,"stop":22171.0,"target_1":23101.8,"r_ratio":1.7,"result":"win","pnl_pct":1.74},{"date":"2025-04-22 18:00","setup":"Rollover","bias":"bearish","entry":23014.0,"stop":23360.8,"target_1":22344.0,"r_ratio":1.9,"result":"win","pnl_pct":1.93},{"date":"2025-05-09 07:00","setup":"Bottom Heavy","bias":"bullish","entry":22816.5,"stop":22472.7,"target_1":23346.6,"r_ratio":1.5,"result":"win","pnl_pct":1.54},{"date":"2025-05-09 09:00","setup":"Top Heavy","bias":"bullish","entry":23114.1,"stop":22765.8,"target_1":23771.4,"r_ratio":1.9,"result":"win","pnl_pct":1.89},{"date":"2025-05-09 13:00","setup":"Top Heavy","bias":"bullish","entry":22826.3,"stop":22482.4,"target_1":23394.8,"r_ratio":1.7,"result":"win","pnl_pct":1.65},{"date":"2025-05-12 07:00","setup":"Rollover","bias":"bullish","entry":23070.3,"stop":22722.7,"target_1":23668.4,"r_ratio":1.7,"result":"win","pnl_pct":1.72},{"date":"2025-05-17 11:00","setup":"Retracement","bias":"bullish","entry":23041.3,"stop":22694.1,"target_1":23752.4,"r_ratio":2.0,"result":"win","pnl_pct":2.05}]},"BANKNIFTY":{"stats":{"total_trades":26,"wins":13,"losses":13,"win_rate":50.0,"avg_win_pct":1.86,"avg_loss_pct":-1.0,"net_pnl_pct":11.55,"max_drawdown_pct":5.85,"profit_factor":1.86,"days_tested":90,"setup_breakdown":{"Rollover":{"total":9,"wins":4},"Bottom Heavy":{"total":9,"wins":6},"Retracement":{"total":8,"wins":3}}},"currency":"₹","equity_curve":[{"ts":0,"equity":100.0},{"ts":1741161600000,"equity":100.33},{"ts":1741374000000,"equity":102.2},{"ts":1741611600000,"equity":99.91},{"ts":1741676400000,"equity":103.41},{"ts":1742068800000,"equity":105.86},{"ts":1742641200000,"equity":109.73},{"ts":1743080400000,"equity":104.45},{"ts":1745352000000,"equity":107.91},{"ts":1745352000000,"equity":110.19},{"ts":1745524800000,"equity":113.81},{"ts":1745578800000,"equity":103.23},{"ts":1745740800000,"equity":102.37},{"ts":1745755200000,"equity":100.92},{"ts":1745776800000,"equity":110.84},{"ts":1745863200000,"equity":106.57},{"ts":1745913600000,"equity":105.51},{"ts":1746000000000,"equity":112.0},{"ts":1746367200000,"equity":101.35},{"ts":1746378000000,"equity":111.96},{"ts":1746442800000,"equity":111.55},{"ts":1747134000000,"equity":98.91},{"ts":1747314000000,"equity":103.98},{"ts":1747494000000,"equity":112.67},{"ts":1747735200000,"equity":100.84},{"ts":1747944000000,"equity":101.94},{"ts":1748160000000,"equity":104.98}],"trades":[{"date":"2025-03-07 19:00","setup":"Rollover","bias":"bearish","entry":47107.6,"stop":47817.4,"target_1":45787.7,"r_ratio":1.9,"result":"win","pnl_pct":1.86},{"date":"2025-03-15 20:00","setup":"Rollover","bias":"bearish","entry":47088.3,"stop":47797.8,"target_1":45807.0,"r_ratio":1.8,"result":"win","pnl_pct":1.81},{"date":"2025-04-22 20:00","setup":"Retracement","bias":"bearish","entry":46654.3,"stop":47357.3,"target_1":45287.7,"r_ratio":1.9,"result":"win","pnl_pct":1.94},{"date":"2025-04-22 20:00","setup":"Retracement","bias":"bearish","entry":46499.5,"stop":47200.1,"target_1":45023.5,"r_ratio":2.1,"result":"win","pnl_pct":2.11},{"date":"2025-04-24 20:00","setup":"Bottom Heavy","bias":"bearish","entry":47884.5,"stop":48606.0,"target_1":46714.3,"r_ratio":1.6,"result":"win","pnl_pct":1.62},{"date":"2025-04-25 11:00","setup":"Retracement","bias":"bullish","entry":47291.5,"stop":46578.9,"target_1":48983.0,"r_ratio":2.4,"result":"win","pnl_pct":2.37},{"date":"2025-04-28 18:00","setup":"Bottom Heavy","bias":"bearish","entry":46483.4,"stop":47183.8,"target_1":45421.4,"r_ratio":1.5,"result":"win","pnl_pct":1.52},{"date":"2025-04-30 08:00","setup":"Rollover","bias":"bearish","entry":48018.7,"stop":48742.2,"target_1":46523.6,"r_ratio":2.1,"result":"win","pnl_pct":2.07},{"date":"2025-05-04 17:00","setup":"Bottom Heavy","bias":"bullish","entry":46976.8,"stop":46269.0,"target_1":48110.6,"r_ratio":1.6,"result":"win","pnl_pct":1.6},{"date":"2025-05-15 13:00","setup":"Bottom Heavy","bias":"bullish","entry":46905.3,"stop":46198.5,"target_1":48131.5,"r_ratio":1.7,"result":"win","pnl_pct":1.74},{"date":"2025-05-20 10:00","setup":"Bottom Heavy","bias":"bearish","entry":47621.8,"stop":48339.4,"target_1":46219.5,"r_ratio":2.0,"result":"win","pnl_pct":1.95},{"date":"2025-05-22 20:00","setup":"Bottom Heavy","bias":"bullish","entry":48246.3,"stop":47519.3,"target_1":49654.0,"r_ratio":1.9,"result":"win","pnl_pct":1.94},{"date":"2025-05-25 08:00","setup":"Rollover","bias":"bullish","entry":46727.1,"stop":46023.0,"target_1":47914.8,"r_ratio":1.7,"result":"win","pnl_pct":1.69}]},"RELIANCE":{"stats":{"total_trades":34,"wins":20,"losses":14,"win_rate":58.8,"avg_win_pct":1.83,"avg_loss_pct":-1.0,"net_pnl_pct":24.82,"max_drawdown_pct":2.97,"profit_factor":2.61,"days_tested":90,"setup_breakdown":{"Bottom Heavy":{"total":9,"wins":6},"Rollover":{"total":10,"wins":6},"Top Heavy":{"total":8,"wins":5},"Retracement":{"total":7,"wins":3}}},"currency":"₹","equity_curve":[{"ts":0,"equity":100.0},{"ts":1741028400000,"equity":112.0},{"ts":1741449600000,"equity":116.82},{"ts":1741960800000,"equity":104.45},{"ts":1741971600000,"equity":124.06},{"ts":1742058000000,"equity":120.28},{"ts":1742220000000,"equity":121.49},{"ts":1742284800000,"equity":120.11},{"ts":1742367600000,"equity":126.06},{"ts":1742403600000,"equity":118.02},{"ts":1742475600000,"equity":102.58},{"ts":1742893200000,"equity":108.0},{"ts":1743354000000,"equity":115.65},{"ts":1743364800000,"equity":122.72},{"ts":1743922800000,"equity":122.31},{"ts":1744020000000,"equity":102.35},{"ts":1744095600000,"equity":114.65},{"ts":1744113600000,"equity":105.99},{"ts":1744135200000,"equity":120.84},{"ts":1744390800000,"equity":103.39},{"ts":1744574400000,"equity":103.61},{"ts":1744732800000,"equity":113.96},{"ts":1745067600000,"equity":104.66},{"ts":1745143200000,"equity":102.53},{"ts":1745179200000,"equity":115.81},{"ts":1745913600000,"equity":126.08},{"ts":1746302400000,"equity":101.87},{"ts":1746374400000,"equity":109.98},{"ts":1746781200000,"equity":124.8},{"ts":1746878400000,"equity":118.91},{"ts":1746882000000,"equity":100.85},{"ts":1747130400000,"equity":124.82},{"ts":1747648800000,"equity":123.1},{"ts":1748523600000,"equity":101.55}],"trades":[{"date":"2025-03-03 19:00","setup":"Bottom Heavy","bias":"bearish","entry":2907.3,"stop":2951.1,"target_1":2826.7,"r_ratio":1.8,"result":"win","pnl_pct":1.84},{"date":"2025-03-08 16:00","setup":"Bottom Heavy","bias":"bearish","entry":2933.9,"stop":2978.1,"target_1":2850.4,"r_ratio":1.9,"result":"win","pnl_pct":1.89},{"date":"2025-03-14 14:00","setup":"Rollover","bias":"bearish","entry":2910.5,"stop":2954.4,"target_1":2820.5,"r_ratio":2.1,"result":"win","pnl_pct":2.05},{"date":"2025-03-14 17:00","setup":"Top Heavy","bias":"bearish","entry":3001.7,"stop":3046.9,"target_1":2937.0,"r_ratio":1.4,"result":"win","pnl_pct":1.43},{"date":"2025-03-18 08:00","setup":"Top Heavy","bias":"bearish","entry":2926.2,"stop":2970.3,"target_1":2848.0,"r_ratio":1.8,"result":"win","pnl_pct":1.77},{"date":"2025-03-19 07:00","setup":"Retracement","bias":"bearish","entry":2934.5,"stop":2978.7,"target_1":2828.5,"r_ratio":2.4,"result":"win","pnl_pct":2.4},{"date":"2025-03-19 17:00","setup":"Retracement","bias":"bullish","entry":2947.9,"stop":2903.5,"target_1":3039.2,"r_ratio":2.1,"result":"win","pnl_pct":2.05},{"date":"2025-03-25 09:00","setup":"Rollover","bias":"bullish","entry":2925.0,"stop":2880.9,"target_1":3008.9,"r_ratio":1.9,"result":"win","pnl_pct":1.9},{"date":"2025-03-30 20:00","setup":"Bottom Heavy","bias":"bearish","entry":2926.2,"stop":2970.3,"target_1":2858.1,"r_ratio":1.5,"result":"win","pnl_pct":1.55},{"date":"2025-04-08 12:00","setup":"Top Heavy","bias":"bearish","entry":2914.3,"stop":2958.2,"target_1":2849.6,"r_ratio":1.5,"result":"win","pnl_pct":1.47},{"date":"2025-04-08 18:00","setup":"Top Heavy","bias":"bullish","entry":2940.0,"stop":2895.7,"target_1":3012.4,"r_ratio":1.6,"result":"win","pnl_pct":1.63},{"date":"2025-04-11 17:00","setup":"Bottom Heavy","bias":"bullish","entry":2881.6,"stop":2838.2,"target_1":2960.1,"r_ratio":1.8,"result":"win","pnl_pct":1.81},{"date":"2025-04-15 16:00","setup":"Top Heavy","bias":"bearish","entry":2895.8,"stop":2939.4,"target_1":2819.7,"r_ratio":1.7,"result":"win","pnl_pct":1.75},{"date":"2025-04-19 13:00","setup":"Rollover","bias":"bearish","entry":2915.5,"stop":2959.4,"target_1":2824.0,"r_ratio":2.1,"result":"win","pnl_pct":2.08},{"date":"2025-04-20 10:00","setup":"Bottom Heavy","bias":"bullish","entry":2888.6,"stop":2845.1,"target_1":2960.8,"r_ratio":1.7,"result":"win","pnl_pct":1.66},{"date":"2025-04-20 20:00","setup":"Bottom Heavy","bias":"bullish","entry":2900.1,"stop":2856.4,"target_1":2970.8,"r_ratio":1.6,"result":"win","pnl_pct":1.62},{"date":"2025-04-29 08:00","setup":"Rollover","bias":"bullish","entry":3031.0,"stop":2985.3,"target_1":3105.2,"r_ratio":1.6,"result":"win","pnl_pct":1.63},{"date":"2025-05-03 20:00","setup":"Rollover","bias":"bearish","entry":2880.0,"stop":2923.4,"target_1":2798.9,"r_ratio":1.9,"result":"win","pnl_pct":1.87},{"date":"2025-05-04 16:00","setup":"Rollover","bias":"bullish","entry":2910.7,"stop":2866.8,"target_1":2991.0,"r_ratio":1.8,"result":"win","pnl_pct":1.83},{"date":"2025-05-19 10:00","setup":"Retracement","bias":"bearish","entry":2950.2,"stop":2994.7,"target_1":2845.5,"r_ratio":2.4,"result":"win","pnl_pct":2.35}]}};
+
+const LABELS = {BTCUSDT:'BTC/USDT',ETHUSDT:'ETH/USDT',NIFTY50:'NIFTY 50',BANKNIFTY:'BANK NIFTY',RELIANCE:'RELIANCE'};
+let _activeSym = 'BTCUSDT';
+let _activeTab = 'sym';
+
+function showSym(sym){
+  _activeSym=sym; _activeTab='sym';
+  document.querySelectorAll('.stab').forEach((t,i)=>{
+    t.classList.toggle('active', t.textContent.trim()===LABELS[sym]||t.textContent.includes('▾')===false&&i===Object.keys(LABELS).indexOf(sym));
+  });
+  // update active tab
+  document.querySelectorAll('.stab:not(:last-child)').forEach((t,i)=>{
+    t.classList.toggle('active', i===Object.keys(DATA).indexOf(sym));
+  });
+  document.querySelector('.stab:last-child').classList.remove('active');
+  renderSym(sym);
+}
+
+function showTab(t){
+  _activeTab=t;
+  document.querySelectorAll('.stab').forEach(tab=>tab.classList.remove('active'));
+  document.querySelector('.stab:last-child').classList.add('active');
+  renderCompare();
+}
+
+function renderSym(sym){
+  const d=DATA[sym], st=d.stats, cur=d.currency;
+  const pnlPos=st.net_pnl_pct>=0;
+  const wrC=st.win_rate>=55?'g':st.win_rate>=45?'a':'r';
+  const pfC=st.profit_factor>=2?'g':st.profit_factor>=1.5?'a':'r';
+
+  let html=`
+  <div class="summary-row">
+    <div class="stat"><div class="sk">Total Trades</div><div class="sv b">${st.total_trades}</div><div class="sv-sub">${st.wins}W / ${st.losses}L</div></div>
+    <div class="stat"><div class="sk">Win Rate</div><div class="sv ${wrC}">${st.win_rate}%</div></div>
+    <div class="stat"><div class="sk">Net PnL</div><div class="sv ${pnlPos?'g':'r'}">${pnlPos?'+':''}${st.net_pnl_pct}%</div><div class="sv-sub">1% risk/trade</div></div>
+    <div class="stat"><div class="sk">Avg Win</div><div class="sv g">+${st.avg_win_pct}%</div></div>
+    <div class="stat"><div class="sk">Avg Loss</div><div class="sv r">${st.avg_loss_pct}%</div></div>
+    <div class="stat"><div class="sk">Profit Factor</div><div class="sv ${pfC}">${st.profit_factor}</div></div>
+    <div class="stat"><div class="sk">Max Drawdown</div><div class="sv r">${st.max_drawdown_pct}%</div></div>
+    <div class="stat"><div class="sk">Days Tested</div><div class="sv" style="color:var(--muted)">${st.days_tested}</div></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title"><span>EQUITY CURVE (start=100)</span><span style="color:${pnlPos?'var(--green)':'var(--red)'}">${(d.equity_curve[d.equity_curve.length-1]?.equity||100).toFixed(1)}</span></div>
+      <canvas id="eq-cv"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>SETUP BREAKDOWN</span></div>
+      <div id="setup-breakdown"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title"><span>TRADE LOG — ${sym}</span><span style="color:var(--muted)">${st.total_trades} trades</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Date</th><th>Setup</th><th>Bias</th>
+          <th>Entry</th><th>Stop</th><th>T1</th><th>R:R</th>
+          <th>Result</th><th>PnL %</th>
+        </tr></thead>
+        <tbody id="tt-body"></tbody>
+      </table>
+    </div>
+  </div>`;
+
+  document.getElementById('main-content').innerHTML=html;
+  requestAnimationFrame(()=>{
+    drawEq('eq-cv', d.equity_curve);
+    renderSetupBreakdown('setup-breakdown', st.setup_breakdown);
+    renderTradeTable('tt-body', d.trades, cur);
+  });
+}
+
+function drawEq(id, curve){
+  const cv=document.getElementById(id);
+  if(!cv)return;
+  cv.width=cv.parentElement.clientWidth||600; cv.height=180;
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,P={t:14,b:22,l:50,r:20};
+  const sorted=[...curve].sort((a,b)=>a.ts-b.ts);
+  const vals=sorted.map(c=>c.equity);
+  const mn=Math.min(...vals)*0.996, mx=Math.max(...vals)*1.004;
+  const toY=v=>P.t+(mx-v)/(mx-mn)*(H-P.t-P.b);
+  const toX=i=>P.l+i/(sorted.length-1)*(W-P.l-P.r);
+  ctx.clearRect(0,0,W,H);
+
+  for(let i=0;i<=4;i++){
+    const v=mn+(mx-mn)/4*i,y=toY(v);
+    ctx.strokeStyle='rgba(28,29,46,.9)';ctx.lineWidth=.5;
+    ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(W-P.r,y);ctx.stroke();
+    ctx.fillStyle='#2e2f45';ctx.font='9px Space Mono';ctx.textAlign='right';
+    ctx.fillText(v.toFixed(1),P.l-3,y+3);
+  }
+  if(100>=mn&&100<=mx){
+    const y=toY(100);
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(90,92,122,.4)';ctx.lineWidth=.8;
+    ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(W-P.r,y);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const finalV=vals[vals.length-1];
+  const isP=finalV>=100;
+  const grad=ctx.createLinearGradient(0,P.t,0,H-P.b);
+  grad.addColorStop(0,isP?'rgba(15,204,138,.22)':'rgba(240,64,96,.22)');
+  grad.addColorStop(1,'rgba(7,8,15,0)');
+  ctx.beginPath();ctx.moveTo(toX(0),toY(sorted[0].equity));
+  sorted.forEach((_,i)=>ctx.lineTo(toX(i),toY(sorted[i].equity)));
+  ctx.lineTo(toX(sorted.length-1),H-P.b);ctx.lineTo(toX(0),H-P.b);
+  ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();ctx.moveTo(toX(0),toY(sorted[0].equity));
+  sorted.forEach((_,i)=>ctx.lineTo(toX(i),toY(sorted[i].equity)));
+  ctx.strokeStyle=isP?'#0fcc8a':'#f04060';ctx.lineWidth=1.5;ctx.stroke();
+
+  // Month labels
+  ctx.fillStyle='#2e2f45';ctx.font='8px Space Mono';ctx.textAlign='center';
+  [0,Math.floor(sorted.length/3),Math.floor(sorted.length*2/3),sorted.length-1].forEach(i=>{
+    if(!sorted[i]||sorted[i].ts===0)return;
+    const d=new Date(sorted[i].ts);
+    ctx.fillText(`${(d.getMonth()+1)}/${d.getDate()}`,toX(i),H-5);
+  });
+  ctx.fillStyle=isP?'#0fcc8a':'#f04060';ctx.font='bold 10px Space Mono';ctx.textAlign='right';
+  ctx.fillText(finalV.toFixed(1),W-P.r,toY(finalV)-4);
+}
+
+function renderSetupBreakdown(id, sb){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const entries=Object.entries(sb).sort((a,b)=>(b[1].wins/b[1].total)-(a[1].wins/a[1].total));
+  el.innerHTML=`<div class="setup-grid">${entries.map(([s,d])=>{
+    const wr=d.total>0?(d.wins/d.total*100).toFixed(0):0;
+    const col=wr>=60?'#0fcc8a':wr>=50?'#f5a623':'#f04060';
+    return `<div class="setup-card">
+      <div class="setup-name">${s}</div>
+      <div class="setup-bar-bg"><div class="setup-bar-fill" style="width:${wr}%;background:${col}"></div></div>
+      <div class="setup-meta"><span>${d.total} trades</span><span style="color:${col}">${wr}% WR</span></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderTradeTable(id, trades, cur){
+  const tb=document.getElementById(id);
+  if(!tb)return;
+  const sorted=[...trades].sort((a,b)=>a.date.localeCompare(b.date));
+  tb.innerHTML=sorted.map((t,i)=>`<tr>
+    <td style="color:var(--dim)">${i+1}</td>
+    <td style="color:var(--dim)">${t.date}</td>
+    <td>${t.setup}</td>
+    <td><span class="badge ${t.bias==='bullish'?'bull':'bear'}">${t.bias.toUpperCase()}</span></td>
+    <td style="color:var(--blue)">${cur}${t.entry.toLocaleString('en-IN')}</td>
+    <td style="color:var(--red)">${cur}${t.stop.toLocaleString('en-IN')}</td>
+    <td style="color:var(--green)">${cur}${t.target_1.toLocaleString('en-IN')}</td>
+    <td style="color:var(--purple)">${t.r_ratio}:1</td>
+    <td><span class="badge ${t.result}">${t.result.toUpperCase()}</span></td>
+    <td class="${t.result}">${t.pnl_pct>0?'+':''}${t.pnl_pct}%</td>
+  </tr>`).join('');
+}
+
+function renderCompare(){
+  const syms=Object.keys(DATA);
+  const sorted=[...syms].sort((a,b)=>DATA[b].stats.net_pnl_pct-DATA[a].stats.net_pnl_pct);
+
+  let html=`
+  <div class="multi-eq" style="margin-bottom:20px">${syms.map(sym=>{
+    const d=DATA[sym],st=d.stats,pnlPos=st.net_pnl_pct>=0;
+    return `<div class="meq-card">
+      <div class="meq-sym">${LABELS[sym]}</div>
+      <div class="meq-pnl" style="color:${pnlPos?'var(--green)':'var(--red)'}">${pnlPos?'+':''}${st.net_pnl_pct}%</div>
+      <canvas id="meq-${sym}" class="meq-canvas"></canvas>
+    </div>`;
+  }).join('')}</div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title"><span>STRATEGY COMPARISON — 90 DAYS</span></div>
+    <table class="cmp-table">
+      <thead><tr>
+        <th>Rank</th><th>Symbol</th><th>Trades</th><th>Win Rate</th>
+        <th>Net PnL</th><th>Avg Win</th><th>Avg Loss</th><th>Profit Factor</th><th>Max DD</th>
+      </tr></thead>
+      <tbody>${sorted.map((sym,i)=>{
+        const st=DATA[sym].stats;
+        const rc=i===0?'rank-1':i===1?'rank-2':'rank-3';
+        const pnlPos=st.net_pnl_pct>=0;
+        return `<tr>
+          <td class="${rc}">#${i+1}</td>
+          <td style="font-weight:700;cursor:pointer;color:var(--blue)" onclick="showSym('${sym}')">${LABELS[sym]}</td>
+          <td>${st.total_trades}</td>
+          <td class="${st.win_rate>=55?'win':st.win_rate>=45?'':''}" style="color:${st.win_rate>=55?'var(--green)':st.win_rate>=45?'var(--amber)':'var(--red)'}">${st.win_rate}%</td>
+          <td style="color:${pnlPos?'var(--green)':'var(--red)'};font-weight:700">${pnlPos?'+':''}${st.net_pnl_pct}%</td>
+          <td style="color:var(--green)">+${st.avg_win_pct}%</td>
+          <td style="color:var(--red)">${st.avg_loss_pct}%</td>
+          <td style="color:${st.profit_factor>=2?'var(--green)':st.profit_factor>=1.5?'var(--amber)':'var(--red)'}">${st.profit_factor}</td>
+          <td style="color:var(--red)">${st.max_drawdown_pct}%</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>BEST SETUP PER SYMBOL</span></div>
+    <div class="setup-grid">${syms.map(sym=>{
+      const sb=DATA[sym].stats.setup_breakdown;
+      const best=Object.entries(sb).sort((a,b)=>(b[1].wins/b[1].total)-(a[1].wins/a[1].total))[0];
+      if(!best)return '';
+      const wr=(best[1].wins/best[1].total*100).toFixed(0);
+      return `<div class="setup-card">
+        <div class="setup-name" style="color:var(--blue)">${LABELS[sym]}</div>
+        <div style="font-size:10px;margin-bottom:4px;color:var(--text)">${best[0]}</div>
+        <div class="setup-bar-bg"><div class="setup-bar-fill" style="width:${wr}%;background:#0fcc8a"></div></div>
+        <div class="setup-meta"><span>${best[1].total} trades</span><span style="color:var(--green)">${wr}% WR</span></div>
+      </div>`;
+    }).join('')}
+    </div>
+  </div>`;
+
+  document.getElementById('main-content').innerHTML=html;
+  requestAnimationFrame(()=>{
+    syms.forEach(sym=>{
+      const curve=[...DATA[sym].equity_curve].sort((a,b)=>a.ts-b.ts);
+      drawEqMini(`meq-${sym}`, curve, DATA[sym].stats.net_pnl_pct>=0);
+    });
+  });
+}
+
+function drawEqMini(id, curve, isP){
+  const cv=document.getElementById(id);
+  if(!cv)return;
+  cv.width=cv.parentElement.clientWidth||200; cv.height=70;
+  const W=cv.width,H=cv.height,P={t:4,b:4,l:2,r:2};
+  const vals=curve.map(c=>c.equity);
+  const mn=Math.min(...vals)*0.998, mx=Math.max(...vals)*1.002;
+  const toY=v=>P.t+(mx-v)/(mx-mn)*(H-P.t-P.b);
+  const toX=i=>P.l+i/(curve.length-1)*(W-P.l-P.r);
+  ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,isP?'rgba(15,204,138,.2)':'rgba(240,64,96,.2)');
+  grad.addColorStop(1,'rgba(7,8,15,0)');
+  ctx.beginPath();ctx.moveTo(toX(0),toY(curve[0].equity));
+  curve.forEach((_,i)=>ctx.lineTo(toX(i),toY(curve[i].equity)));
+  ctx.lineTo(toX(curve.length-1),H-P.b);ctx.lineTo(toX(0),H-P.b);
+  ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();ctx.moveTo(toX(0),toY(curve[0].equity));
+  curve.forEach((_,i)=>ctx.lineTo(toX(i),toY(curve[i].equity)));
+  ctx.strokeStyle=isP?'#0fcc8a':'#f04060';ctx.lineWidth=1.2;ctx.stroke();
+}
+
+// Boot
+showSym('BTCUSDT');
+</script>
+</body>
+</html>
