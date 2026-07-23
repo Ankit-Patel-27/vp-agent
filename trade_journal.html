@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VP Agent — Trade Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080f;--bg1:#0d0e1a;--bg2:#111220;--bg3:#161725;--border:#1c1d2e;--border2:#242538;--text:#dde0f0;--muted:#5a5c7a;--dim:#282940;--green:#0fcc8a;--red:#f04060;--amber:#f5a623;--blue:#4d9eff;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;min-height:100vh}
+.hdr{display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--bg1);border-bottom:1px solid var(--border)}
+.logo{font-size:13px;font-weight:700;letter-spacing:.2em}.logo em{color:var(--green);font-style:normal}
+.btn{background:transparent;border:1px solid var(--border2);color:var(--muted);padding:5px 12px;font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:.08em}
+.btn:hover{border-color:var(--green);color:var(--green)}
+.tabs{display:flex;gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.tab{padding:8px 20px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;background:var(--bg2);color:var(--muted);border:none;font-family:var(--mono)}
+.tab.active{background:var(--bg1);color:var(--green);box-shadow:inset 0 -2px 0 var(--green)}
+.content{padding:20px;overflow-y:auto}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:20px}
+.stat{background:var(--bg2);border:1px solid var(--border2);padding:12px 14px}
+.sk{font-size:8px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
+.sv{font-size:20px;font-weight:700}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.b{color:var(--blue)}
+.card{background:var(--bg2);border:1px solid var(--border2);padding:14px;margin-bottom:14px}
+.ct{font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{background:var(--bg3);padding:6px 10px;text-align:left;font-size:8px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:5px 10px;border-bottom:1px solid rgba(28,29,46,.5)}
+tr:hover td{background:var(--bg2)}
+.badge{display:inline-block;padding:1px 7px;font-size:8px;font-weight:700;border-radius:2px}
+.bull{background:rgba(15,204,138,.12);color:var(--green);border:1px solid rgba(15,204,138,.25)}
+.bear{background:rgba(240,64,96,.12);color:var(--red);border:1px solid rgba(240,64,96,.25)}
+.win{background:rgba(15,204,138,.1);color:var(--green);border:1px solid rgba(15,204,138,.2)}
+.loss{background:rgba(240,64,96,.1);color:var(--red);border:1px solid rgba(240,64,96,.2)}
+.pending{background:rgba(90,92,122,.1);color:var(--muted);border:1px solid var(--border2)}
+.empty{padding:40px;text-align:center;color:var(--muted);line-height:2}
+.spin{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="logo">VP <em>AGENT</em></div>
+  <span style="font-size:9px;color:var(--muted);letter-spacing:.1em">TRADE JOURNAL</span>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <a href="/"><button class="btn">← DASHBOARD</button></a>
+    <button class="btn" onclick="load()" style="border-color:var(--blue);color:var(--blue)">↺ REFRESH</button>
+    <button class="btn" onclick="exportHTML()" style="border-color:var(--amber);color:var(--amber)">⬇ EXPORT</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="t-ov" onclick="showTab('overview')">OVERVIEW</button>
+  <button class="tab" id="t-tr" onclick="showTab('trades')">ALL TRADES</button>
+  <button class="tab" id="t-paper" onclick="showTab('paper')">PAPER TRADES</button>
+</div>
+
+<div id="pane-overview" class="content">
+  <div id="ov-content"><div class="empty"><span class="spin"></span>Loading…</div></div>
+</div>
+<div id="pane-trades" class="content" style="display:none">
+  <div class="card">
+    <div class="ct">All Logged Trades (via LOG OUTCOME button)</div>
+    <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
+      <table><thead><tr><th>#</th><th>Date</th><th>Asset</th><th>Setup</th><th>Bias</th><th>Entry</th><th>Stop</th><th>T1</th><th>Result</th><th>R Achieved</th><th>Notes</th></tr></thead>
+      <tbody id="trades-body"><tr><td colspan="11" class="empty">Loading…</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+<div id="pane-paper" class="content" style="display:none">
+  <div id="paper-content"><div class="empty"><span class="spin"></span>Loading paper trades…</div></div>
+</div>
+
+<script>
+let _cases=[], _stats={}, _paper={};
+
+function showTab(t){
+  ['overview','trades','paper'].forEach(id=>{
+    document.getElementById('t-'+id.slice(0,2)).classList.toggle('active',id===t);
+    document.getElementById('pane-'+id).style.display=id===t?'block':'none';
+  });
+}
+
+async function load(){
+  try{
+    const [j, p] = await Promise.all([
+      fetch('/api/journal').then(r=>r.json()),
+      fetch('/api/paper').then(r=>r.json()).catch(()=>({trades:[],stats:{}}))
+    ]);
+    _cases=j.cases||[]; _stats=j.stats||{}; _paper=p;
+    renderOverview(); renderTrades(); renderPaper();
+  }catch(e){
+    document.getElementById('ov-content').innerHTML=`<div class="empty" style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderOverview(){
+  const c=_cases, st=_stats;
+  const completed=c.filter(x=>x.outcome?.result&&x.outcome.result!=='pending');
+  const wins=completed.filter(x=>x.outcome.result==='win');
+  const losses=completed.filter(x=>x.outcome.result==='loss');
+  const n=completed.length;
+  const wr=n?(wins.length/n*100).toFixed(1):0;
+  const pending=c.length-n;
+  const avgW=wins.length?(wins.reduce((s,x)=>s+(x.outcome.r_achieved||0),0)/wins.length).toFixed(2):0;
+
+  // Setup breakdown
+  const sb={};
+  completed.forEach(x=>{const s=x.setup_type||'?';if(!sb[s])sb[s]={w:0,t:0};sb[s].t++;if(x.outcome.result==='win')sb[s].w++;});
+
+  document.getElementById('ov-content').innerHTML=`
+    <div class="stat-row">
+      <div class="stat"><div class="sk">Total Logged</div><div class="sv b">${c.length}</div></div>
+      <div class="stat"><div class="sk">Completed</div><div class="sv">${n}</div></div>
+      <div class="stat"><div class="sk">Win Rate</div><div class="sv ${wr>=55?'g':wr>=45?'a':'r'}">${wr}%</div></div>
+      <div class="stat"><div class="sk">Wins</div><div class="sv g">${wins.length}</div></div>
+      <div class="stat"><div class="sk">Losses</div><div class="sv r">${losses.length}</div></div>
+      <div class="stat"><div class="sk">Pending</div><div class="sv a">${pending}</div></div>
+      <div class="stat"><div class="sk">Avg Win R</div><div class="sv g">+${avgW}R</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">Setup Breakdown</div>
+      ${Object.entries(sb).map(([s,d])=>{
+        const wr2=d.t?(d.w/d.t*100).toFixed(0):0;
+        const col=wr2>=60?'var(--green)':wr2>=50?'var(--amber)':'var(--red)';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="width:110px;font-size:10px">${s.replace(/_/g,' ')}</span>
+          <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px">
+            <div style="width:${wr2}%;height:100%;background:${col};border-radius:3px"></div></div>
+          <span style="font-size:10px;font-weight:700;color:${col};width:36px;text-align:right">${wr2}%</span>
+          <span style="font-size:9px;color:var(--dim)">${d.t}t</span>
+        </div>`;
+      }).join('')||'<div class="empty">No completed trades yet. Log outcomes via the dashboard.</div>'}
+    </div>`;
+}
+
+function renderTrades(){
+  const tbody=document.getElementById('trades-body');
+  const sorted=[..._cases].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  if(!sorted.length){tbody.innerHTML='<tr><td colspan="11" class="empty">No trades logged yet. Use LOG OUTCOME in the dashboard.</td></tr>';return;}
+  const cur=t=>t.asset?.includes('USDT')?'$':'₹';
+  const fmt=(t,v)=>v?cur(t)+Number(v).toLocaleString('en-IN'):'—';
+  tbody.innerHTML=sorted.map((c,i)=>{
+    const r=c.outcome?.result||'pending';
+    const tp=c.trade_params||{};
+    return `<tr>
+      <td style="color:var(--dim)">${sorted.length-i}</td>
+      <td style="color:var(--dim)">${(c.timestamp||'').slice(0,10)}</td>
+      <td style="font-weight:700">${c.asset||'?'}</td>
+      <td>${(c.setup_type||'?').replace(/_/g,' ')}</td>
+      <td><span class="badge ${c.trade_bias==='bullish'?'bull':'bear'}">${c.trade_bias||'?'}</span></td>
+      <td style="color:var(--blue)">${fmt(c,tp.entry)}</td>
+      <td style="color:var(--red)">${fmt(c,tp.stop)}</td>
+      <td style="color:var(--green)">${fmt(c,tp.target_1)}</td>
+      <td><span class="badge ${r}">${r.toUpperCase()}</span></td>
+      <td class="${r==='win'?'g':r==='loss'?'r':''}">${c.outcome?.r_achieved!=null?(c.outcome.r_achieved>0?'+':'')+c.outcome.r_achieved+'R':'—'}</td>
+      <td style="color:var(--dim);font-size:9px">${c.outcome?.notes||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPaper(){
+  const d=_paper, st=d.stats||{}, trades=d.trades||[];
+  const pnl=st.net_pnl||0;
+  const wr=st.win_rate||0;
+  const open=trades.filter(t=>t.status==='open');
+  const done=trades.filter(t=>t.status!=='open').reverse();
+
+  document.getElementById('paper-content').innerHTML=`
+    <div class="stat-row">
+      <div class="stat"><div class="sk">Total</div><div class="sv b">${st.total_trades||0}</div></div>
+      <div class="stat"><div class="sk">Open</div><div class="sv a">${st.open||0}</div></div>
+      <div class="stat"><div class="sk">Win Rate</div><div class="sv ${wr>=55?'g':wr>=45?'a':'r'}">${wr}%</div></div>
+      <div class="stat"><div class="sk">Net PnL</div><div class="sv ${pnl>=0?'g':'r'}">${pnl>=0?'+':''}${pnl}%</div></div>
+      <div class="stat"><div class="sk">Equity</div><div class="sv g">${(st.equity||100).toFixed(2)}</div></div>
+    </div>
+    ${open.length?`<div class="card"><div class="ct">Open Positions (${open.length})</div>
+      ${open.map(t=>`<div style="background:var(--bg3);border:1px solid var(--amber);padding:8px 12px;margin-bottom:6px;border-left:3px solid var(--amber)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-weight:700">${t.symbol}</span>
+          <span style="color:${t.bias==='bullish'?'var(--green)':'var(--red)'}">${(t.bias||'').toUpperCase()}</span>
+        </div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:4px">${(t.setup||'').replace(/_/g,' ').toUpperCase()}</div>
+        <div style="display:flex;gap:12px;font-size:9px">
+          <span>Entry <span style="color:var(--blue)">${(t.entry||0).toLocaleString()}</span></span>
+          <span>Stop <span style="color:var(--red)">${(t.stop||0).toLocaleString()}</span></span>
+          <span>T1 <span style="color:var(--green)">${(t.target_1||0).toLocaleString()}</span></span>
+        </div>
+      </div>`).join('')}
+    </div>`:''}
+    <div class="card"><div class="ct">Completed Paper Trades</div>
+      <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
+        <table><thead><tr><th>Date</th><th>Symbol</th><th>Setup</th><th>Bias</th><th>Entry</th><th>Stop</th><th>T1</th><th>Result</th><th>PnL</th></tr></thead>
+        <tbody>${done.length?done.map(t=>{
+          const r=t.result||'—';
+          return `<tr>
+            <td style="color:var(--dim)">${(t.opened_at||'').slice(0,10)}</td>
+            <td style="font-weight:700">${t.symbol}</td>
+            <td>${(t.setup||'').replace(/_/g,' ')}</td>
+            <td><span class="badge ${t.bias==='bullish'?'bull':'bear'}">${t.bias||'?'}</span></td>
+            <td style="color:var(--blue)">${(t.entry||0).toLocaleString()}</td>
+            <td style="color:var(--red)">${(t.stop||0).toLocaleString()}</td>
+            <td style="color:var(--green)">${(t.target_1||0).toLocaleString()}</td>
+            <td><span class="badge ${r}">${r.toUpperCase()}</span></td>
+            <td class="${r==='win'?'g':r==='loss'?'r':''}">${t.pnl!=null?(t.pnl>=0?'+':'')+t.pnl+'%':'—'}</td>
+          </tr>`;
+        }).join(''):`<tr><td colspan="9" class="empty">No completed paper trades yet — scanner runs every 5 min</td></tr>`}
+        </tbody></table>
+      </div>
+    </div>`;
+}
+
+function exportHTML(){
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>VP Agent Report</title>
+  <style>body{font-family:monospace;background:#07080f;color:#dde0f0;padding:20px}
+  .g{color:#0fcc8a}.r{color:#f04060}.a{color:#f5a623}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th,td{padding:5px 10px;border-bottom:1px solid #1c1d2e;text-align:left}
+  th{background:#111220;font-size:9px;text-transform:uppercase;color:#5a5c7a}
+  </style></head><body>
+  <h2 style="font-size:16px;margin-bottom:16px">VP Agent — Trade Report · ${new Date().toLocaleDateString()}</h2>
+  ${document.getElementById('ov-content').innerHTML}
+  </body></html>`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  a.download=`vp_report_${new Date().toISOString().slice(0,10)}.html`;
+  a.click();
+}
+
+load();
+</script>
+</body>
+</html>

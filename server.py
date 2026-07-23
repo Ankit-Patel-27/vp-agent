@@ -55,7 +55,13 @@ def get_historical_candles(symbol: str, start_ms: int, end_ms: int, interval="5m
 
 @app.route("/")
 def index():
-    return send_file("dashboard.html")
+    import os
+    return send_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard.html"))
+
+@app.route("/journal")
+def journal():
+    import os
+    return send_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), "trade_journal.html"))
 
 
 @app.route("/api/analysis")
@@ -251,7 +257,7 @@ def api_paper():
 
 if __name__ == "__main__":
     import os
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", os.environ.get("RAILWAY_PORT", 8080)))
     print("\n" + "="*52)
     print("  VP AGENT v4  —  Live + Backtest Dashboard")
     print("="*52)
@@ -261,4 +267,4 @@ if __name__ == "__main__":
     print("="*52 + "\n")
     # Start 24/7 paper trader in background
     start_background()
-    app.run(debug=False, port=port, host="0.0.0.0")
+    app.run(debug=False, port=port, host="0.0.0.0", threaded=True)
